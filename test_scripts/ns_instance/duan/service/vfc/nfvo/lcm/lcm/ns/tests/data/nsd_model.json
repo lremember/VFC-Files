@@ -1,0 +1,17 @@
+{
+    "vnfs": [{
+        "vnf_id": "vnf1",
+        "properties": {
+            "id": "vnfd1",
+            "nf_type": "xgw",
+            "vnfm_info": "gvnfm"
+        },
+        "dependencies": [{
+            "vl_id": "5"
+        }]
+    }],
+    "vls": [{
+            "vl_id": "5",
+            "properties": {}
+            }]
+}

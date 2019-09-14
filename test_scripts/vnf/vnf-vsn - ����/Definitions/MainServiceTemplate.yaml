@@ -1,0 +1,341 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+metadata:
+  template_name: vsn
+  template_version: "1.0"
+  template_author: onap
+description: vsn
+
+imports:
+  - onap_dm.yaml
+
+node_types:
+  onap.vsn:
+    derived_from: tosca.nodes.nfv.VNF
+    properties:
+      descriptor_id:
+        type: string
+      provider:
+        type: string
+      product_name:
+        type: string
+      software_version:
+        type: string
+      descriptor_version:
+        type: string
+      flavour_id:
+        type: string
+      flavour_description:
+        type: string
+      vnfm_info:
+        type: list
+        entry_schema:
+          type: string
+
+topology_template:
+  inputs:
+    vsn1_vsn2_private_net_id:
+      type: string
+      description: Private network that connects vsn1 to vsn2
+      default: intelvsn1vsn201_private
+    vsn1_vsn2_private_net_cidr:
+      type: string
+      description: The CIDR of the vsn2 private network
+      default: 10.5.0.0/24
+    vsn1_vsn2_common_private_net_id:
+      type: string
+      description: Private ywh network common that connects vsn1 to vsn2
+      default: intelvsn1vsn202_private
+    vsn1_vsn2_common_private_net_cidr:
+      type: string
+      description: The CIDR of the vsn2 commonn private network
+      default: 10.3.0.0/24
+    vsn1_name_0:
+      type: string
+      description: Name of the vsn1
+      default: intelvsn1
+    vsn2_name_0:
+      type: string
+      description: Name of the vsn2
+      default: intelvsn2
+    vsn1_ip_addr:
+      type: string
+      description: IP address of vsn1
+      default: 10.5.0.21
+    vsn2_ip_addr:
+      type: string
+      description: IP address of vsn2
+      default: 10.5.0.22
+    vsn1_common_ip_addr:
+      type: string
+      description: IP address of vsn1 common
+      default: 10.3.0.21
+    vsn2_common_ip_addr:
+      type: string
+      description: IP address of vsn2 common
+      default: 10.3.0.22
+    vnf_id:
+      type: string
+      description: The VNF ID is provided by ONAP
+      default: vsn_demo_app
+    vf_module_id:
+      type: string
+      description: The vsn ID is provided by ONAP
+      default: Customer_vsn
+    install_script_version:
+      type: string
+      description: install script version number
+      default: 1.2.0-SNAPSHOT
+    nexus_artifact_repo:
+      type: string
+      description: Root URL for the Nexus repository for Maven artifacts
+      default: https://nexus.onap.org
+      
+  substitution_mappings:
+    node_type: onap.vsn
+    properties:
+      descriptor_id: 45711f40-3f43-415b-bb45-46e5c6940735
+      provider: onap
+      product_name: vsn
+      software_version: '1.0.0'
+      descriptor_version: '1.0.0'
+      flavour_id: default
+      flavour_description: default
+      vnfm_info: ['gvnfmdriver']
+
+  node_templates:
+    #Private network that connects vsn1 to vsn2
+    VL_vsn1_vsn2_private_net:
+      type: tosca.nodes.nfv.VnfVirtualLink
+      properties:
+        connectivity_type:
+          layer_protocol: ipv4
+        vl_profile:
+          max_bit_rate_requirements:
+            root: 10000000
+            leaf: 10000000
+          min_bit_rate_requirements:
+            root: 10000000
+            leaf: 10000000
+          networkName: { get_input: vsn1_vsn2_private_net_id}
+          cidr: { get_input: vsn1_vsn2_private_net_cidr }
+          dhcpEnabled: true
+          physicalNetwork: "lsw-05-sriov-1"
+          networkType: vlan
+
+    VL_vsn1_vsn2_common_private_net:
+      type: tosca.nodes.nfv.VnfVirtualLink
+      properties:
+        connectivity_type:
+          layer_protocol: ipv4
+        vl_profile:
+          max_bit_rate_requirements:
+            root: 10000000
+            leaf: 10000000
+          min_bit_rate_requirements:
+            root: 10000000
+            leaf: 10000000
+          networkName: { get_input: vsn1_vsn2_common_private_net_id}
+          cidr: { get_input: vsn1_vsn2_common_private_net_cidr }
+          dhcpEnabled: true
+
+    Cp_vsn1_vsn2_private_net:
+      type: tosca.nodes.nfv.VduCp
+      properties:
+        layer_protocol: [ipv4]
+        trunk_mode: false
+        protocol_data:
+          - asscociated_layer_protocol: ipv4
+            address_data:
+              address_type: ip_address
+              l3_address_data:
+                ip_address_assignment: false
+                floating_ip_activated: false
+                fixed_ip_address:
+                  - { get_input: vsn1_ip_addr }
+        vnic_type: "direct"
+        virtual_network_interface_requirements:
+          - name: "sriov-support"
+            support_mandatory: true
+            network_interface_requirements:
+              interfaceType: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "SR-IOV"}'
+            nic_io_requirements:
+              logical_node_requirements:
+                pciVendorId: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "1234"}'
+                pciDeviceId: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "5678"}'
+                pciNumDevices: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "1"}'
+      requirements:
+        - virtual_binding: VDU_vsn1_0
+        - virtual_link: VL_vsn1_vsn2_private_net
+    
+    Cp_vsn1_vsn2_common_private_net:
+      type: tosca.nodes.nfv.VduCp
+      properties:
+        layer_protocol: [ipv4]
+        trunk_mode: false
+        protocol_data:
+          - asscociated_layer_protocol: ipv4
+            address_data:
+              address_type: ip_address
+              l3_address_data:
+                ip_address_assignment: false
+                floating_ip_activated: false
+                fixed_ip_address:
+                  - { get_input: vsn1_common_ip_addr }
+      requirements:
+        - virtual_binding: VDU_vsn1_0
+        - virtual_link: VL_vsn1_vsn2_common_private_net
+
+    Cp_vsn2_vsn1_private_net:
+      type: tosca.nodes.nfv.VduCp
+      properties:
+        layer_protocol: [ipv4]
+        trunk_mode: false
+        protocol_data:
+          - asscociated_layer_protocol: ipv4
+            address_data:
+              address_type: ip_address
+              l3_address_data:
+                ip_address_assignment: false
+                floating_ip_activated: false
+                fixed_ip_address:
+                  - { get_input: vsn2_ip_addr }
+        vnic_type: "direct"
+        virtual_network_interface_requirements:
+          - name: "sriov-support"
+            support_mandatory: true
+            network_interface_requirements:
+              interfaceType: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "SR-IOV"}'
+            nic_io_requirements:
+              logical_node_requirements:
+                pciVendorId: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "1234"}'
+                pciDeviceId: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "5678"}'
+                pciNumDevices: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "1"}'
+      requirements:
+        - virtual_binding: VDU_vsn2_0
+        - virtual_link: VL_vsn1_vsn2_private_net
+
+    Cp_vsn2_vsn1_common_private_net:
+      type: tosca.nodes.nfv.VduCp
+      properties:
+        layer_protocol: [ipv4]
+        trunk_mode: false
+        protocol_data:
+          - asscociated_layer_protocol: ipv4
+            address_data:
+              address_type: ip_address
+              l3_address_data:
+                ip_address_assignment: false
+                floating_ip_activated: false
+                fixed_ip_address:
+                  - { get_input: vsn2_common_ip_addr }
+      requirements:
+        - virtual_binding: VDU_vsn2_0
+        - virtual_link: VL_vsn1_vsn2_common_private_net
+    
+    VirtualStorage_root_all:
+      # this indicate the VDU root storage size
+      type: tosca.nodes.nfv.Vdu.VirtualStorage
+      properties:
+        type_of_storage: root
+        size_of_storage: 40 GB
+
+    VDU_vsn1_0:
+      type: tosca.nodes.nfv.Vdu.Compute
+      properties:
+        name: { get_input: vsn1_name_0 }
+        description: vsn1
+        configurable_properties:
+          additional_vnfc_configurable_properties: {}
+        vdu_profile:
+          min_number_of_instances: 1
+          max_number_of_instances: 1
+          watchdog: none
+        inject_files: 
+          source_path: ../Artifacts/keys/authorized_keys #SSH authorized_keys
+          dest_path: /home/ubuntu/.ssh/authorized_keys
+        meta_data:
+          vsn1_ip_addr: { get_input: vsn1_ip_addr }
+        user_data: |
+          #!/bin/bash
+          mkdir /opt/config
+          echo "$(get_metadata vsn1_ip_addr)" > /opt/config/vsn1_ip_addr.txt
+
+      capabilities:
+        virtual_compute:
+          properties:
+            #TODO add local disk size
+            virtual_memory:
+              virtual_mem_size: 4096 MB
+              # HPA requirements
+              vdu_memory_requirements:
+                memoryPageSize: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "2 MB"}'
+                numberOfPages: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "1024"}'
+            virtual_cpu:
+              num_virtual_cpu: 2
+              cpu_architecture: generic
+      requirements:
+        - virtual_storage: VirtualStorage_root_all
+      artifacts:
+        sw_image: #TODO need to put glance image name here
+          file: ../Artifacts/images/ubuntu_16.04
+          type: tosca.artifacts.nfv.SwImage
+
+    VDU_vsn2_0:
+      type: tosca.nodes.nfv.Vdu.Compute
+      properties:
+        name: { get_input: vsn2_name_0 }
+        description: vsn2
+        configurable_properties:
+          additional_vnfc_configurable_properties: {}
+        vdu_profile:
+          min_number_of_instances: 1
+          max_number_of_instances: 1
+          watchdog: none
+        inject_files: # TODO SDC BUG
+          source_path: ../Artifacts/keys/authorized_keys #SSH authorized_keys
+          dest_path: /home/ubuntu/.ssh/authorized_keys
+        meta_data:
+          vsn2_ip_addr: { get_input: vsn2_ip_addr }
+        user_data: |
+          #!/bin/bash
+          METADATA=`curl -s http://169.254.169.254/openstack/2012-08-10/meta_data.json`
+          apt-get update
+          apt-get -y install jq
+
+          get_metadata () {
+            echo $METADATA | jq -r ".meta.$1"
+          }
+          mkdir /opt/config
+          echo "$(get_metadata vsn2_ip_addr)" > /opt/config/vsn2_ip_addr.txt
+          echo "$(get_metadata install_script_version)" > /opt/config/install_script_version.txt
+          echo "$(get_metadata nexus_artifact_repo)" > /opt/config/nexus_artifact_repo.txt
+          # Download and run install script
+          apt-get -y install unzip
+          INSTALL_SCRIPT_VERSION=$(get_metadata install_script_version)
+          NEXUS_ARTIFACT_REPO=$(get_metadata nexus_artifact_repo)
+          if [[ "${INSTALL_SCRIPT_VERSION}" =~ "SNAPSHOT" ]]; then REPO=snapshots; else REPO=releases; fi
+          curl -k -L "${NEXUS_ARTIFACT_REPO}/service/local/artifact/maven/redirect?r=${REPO}&g=org.onap.demo.vnf.vcpe&a=vcpe-scripts&e=zip&v=${INSTALL_SCRIPT_VERSION}" -o /opt/vcpe-scripts-${INSTALL_SCRIPT_VERSION}.zip
+          unzip -j /opt/vcpe-scripts-${INSTALL_SCRIPT_VERSION}.zip -d /opt v_gw_install.sh
+          cd /opt
+          chmod +x v_gw_install.sh
+          ./v_gw_install.sh
+
+      capabilities:
+        virtual_compute:
+          properties:
+            #TODO add local disk size
+            virtual_memory:
+              virtual_mem_size: 4096 MB
+              # HPA requirements
+              vdu_memory_requirements:
+                memoryPageSize: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "2 MB"}'
+                numberOfPages: '{"schemaVersion": "0", "schemaSelector": "", "hardwarePlatform": "generic", "mandatory": "true", "configurationValue": "1024"}'
+            virtual_cpu:
+              num_virtual_cpu: 2
+              cpu_architecture: generic
+      requirements:
+        - virtual_storage: VirtualStorage_root_all
+      artifacts:
+        sw_image: #TODO need to put glance image name here
+          file: ../Artifacts/images/ubuntu_16.04
+          type: tosca.artifacts.nfv.SwImage

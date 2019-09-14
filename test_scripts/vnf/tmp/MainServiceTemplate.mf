@@ -1,0 +1,8 @@
+metadata:
+    vnf_product_name: vsn1
+    vnf_provider_id: ONAP
+    vnf_package_version: 1.0
+    vnf_release_data_time: 2018.11.02T13:00+08:00
+
+Source: MainServiceTemplate.yaml
+
